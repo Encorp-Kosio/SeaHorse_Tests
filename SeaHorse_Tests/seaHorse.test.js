@@ -28,17 +28,21 @@ describe('SeaHorse endpoint tests', () => {
         expect(bodyText[0]).toMatchObject(dayStruct);
     });
 
-    it.skip('should contain a hour object', async () => {
+    it('should contain a hour object', async () => {
         let res = await fetch(baseUrl);
         let bodyText = await res.json();
         
-        let dayStruct = 
+        let hourlyDataStruct = 
             {
-                "_id": "65940defe69662b148a643c0",
-                "date": "28.12.2023",
-                "__v": 0
+                "data": {
+                    "eur": expect.any(Number),
+                    "bgn": expect.any(Number),
+                    "volume": expect.any(Number)
+                },
+                "time": expect.stringMatching(/^(0[0-9]|1[0-9]|2[0-4]):00:00$/),
+                "_id": expect.any(String)
             };
 
-        expect(bodyText[0]).toMatchObject(dayStruct);
+        expect(bodyText[0].hourlyData[0]).toMatchObject(hourlyDataStruct);
     });
 });

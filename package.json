@@ -1,13 +1,13 @@
 {
-  "name": "qa-backend-materials",
+  "name": "SeaHorse_tests",
   "version": "1.0.0",
-  "description": "Code examples for QA Backend presentation",
-  "main": "index.js",
+  "description": "test suite for the seaHorse endpoint",
+  "main": "seaHorse.test.js",
   "scripts": {
     "test": "jest",
     "test:coverage": "jest --coverage"
   },
-  "author": "Dimitar Nikolov",
+  "author": "Konstantin Zhlebinkov",
   "license": "ISC",
   "devDependencies": {
     "jest": "^29.7.0"
