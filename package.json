@@ -2,7 +2,7 @@
   "name": "SeaHorse_tests",
   "version": "1.0.0",
   "description": "test suite for the seaHorse endpoint",
-  "main": "seaHorse.test.js",
+  "main": "seaHorseElectricity.js",
   "scripts": {
     "test": "jest",
     "test:coverage": "jest --coverage"
@@ -10,6 +10,10 @@
   "author": "Konstantin Zhlebinkov",
   "license": "ISC",
   "devDependencies": {
+    "eslint": "^9.8.0",
     "jest": "^29.7.0"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
   }
 }

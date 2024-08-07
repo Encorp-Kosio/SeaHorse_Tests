@@ -71,6 +71,6 @@ describe('SeaHorse endpoint tests', () => {
                 expect(hour).toMatchObject(hourlyDataStruct);
             })
         });        
-    }, timeout = 2000);
+    }, 2000);
 
 });
