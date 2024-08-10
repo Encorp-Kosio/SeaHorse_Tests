@@ -1,10 +1,3 @@
-const express = require('express');
-const fetch = require('node-fetch');
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-
 const endpointUrl = 'https://seahorse-app-ehbvv.ondigitalocean.app/prices';
 
 async function fetchPrices() {
@@ -44,36 +37,6 @@ async function getDailyHighestPrice(targetDate){
     })
     return 0;
 }
-
-app.get('/item-by-date', async (req, res) => {
-  const targetDate = req.query.date; // Get the date from query parameters
-
-  if (!targetDate) {
-    return res.status(400).json({ error: 'Date query parameter is required' });
-  }
-
-  // Fetch the data from the external API
-  const data = await fetchPrices();
-
-  if (!data) {
-    return res.status(500).json({ error: 'Failed to fetch data' });
-  }
-
-  // Find the item with the target date
-  const matchedItem = await findItemByDate(data, targetDate);
-
-  if (matchedItem) {
-    res.json(matchedItem);
-  } else {
-    res.status(404).json({ error: 'No item found for the specified date' });
-  }
-});
-
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
-
 
 // Main function to execute the logic
 async function main() {
