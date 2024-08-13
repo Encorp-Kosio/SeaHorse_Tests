@@ -94,6 +94,7 @@ function getHighestPriceAllTime(data) {
   })
   return highest_price_hour_all_time;
 }
+//
 
 app.get('/price/lowest', async (req, res) => {
   const data = await fetchPrices();
