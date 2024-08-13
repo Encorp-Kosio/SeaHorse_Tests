@@ -43,6 +43,13 @@ function getSpecificDate(data, targetDate) {
   return data.find(item => item.date === targetDate);
 }
 
+function writeDayToDatabase(data){
+  let newDayObject = new daySchema(data);
+  newDayObject.save()
+    .then(doc => console.log('Document saved:', doc))
+    .catch(err => console.error('Error saving document:', err));
+}
+
 
 //Functions for finding lowest and highest price hour for a given day
 function getLowestPriceforADay(day) {
@@ -72,13 +79,18 @@ function getLowestPriceAllTime(data) {
     console.error('Invalid data');
     return null;
   }
-  let lowest_price_hour_all_time = data[0].hourlyData[0];
+  let lowest_price_hour = data[0].hourlyData[0];
+  let lowest_price_day = data[0];
+  //iterate through all days.
   data.forEach(day => {
-    let current_day_lowest_price = getLowestPriceforADay(day)
-    if( current_day_lowest_price.data.eur < lowest_price_hour_all_time.data.eur)
-      lowest_price_hour_all_time = current_day_lowest_price; 
+    let current_day_highest_price = getHighestPriceforADay(day)
+    if( current_day_highest_price.data.eur < lowest_price_hour.data.eur)
+      lowest_price_hour = current_day_highest_price; 
+      lowest_price_day = day;
   })
-  return lowest_price_hour_all_time;
+  // set the hourly data object of the day with the highest price to contain only that highest price.
+  lowest_price_day.hourlyData = lowest_price_hour;
+  return lowest_price_day;
 }
 
 function getHighestPriceAllTime(data) {
@@ -86,13 +98,19 @@ function getHighestPriceAllTime(data) {
     console.error('Invalid data');
     return null;
   }
-  let highest_price_hour_all_time = data[0].hourlyData[0];
+  //initialize the objects with the first elemente of the array. Most basic search algorithm
+  let highest_price_hour = data[0].hourlyData[0];
+  let highest_price_day = data[0];
+  //iterate through all days.
   data.forEach(day => {
     let current_day_highest_price = getHighestPriceforADay(day)
-    if( current_day_highest_price.data.eur > highest_price_hour_all_time.data.eur)
-      highest_price_hour_all_time = current_day_highest_price; 
+    if( current_day_highest_price.data.eur > highest_price_hour.data.eur)
+      highest_price_hour = current_day_highest_price; 
+      highest_price_day = day;
   })
-  return highest_price_hour_all_time;
+  // set the hourly data object of the day with the highest price to contain only that highest price.
+  highest_price_day.hourlyData = highest_price_hour;
+  return highest_price_day;
 }
 //
 
@@ -103,10 +121,7 @@ app.get('/price/lowest', async (req, res) => {
   }
   const lowest_price = getLowestPriceAllTime(data);
   if (lowest_price) {
-    let newHour = new hourSchema(lowest_price);
-    newHour.save()
-      .then(doc => console.log('Document saved:', doc))
-      .catch(err => console.error('Error saving document:', err));
+    writeDayToDatabase(lowest_price)
     res.json(lowest_price);
   } else {
     res.status(404).json({ error: 'Error processing request' });
@@ -118,13 +133,10 @@ app.get('/price/highest', async (req, res) => {
   if (!data) {
     return res.status(500).json({ error: 'Failed to fetch data' });
   }
-  const highest_price_hour = getHighestPriceAllTime(data);
-  if (highest_price_hour) {
-    let newHour = new hourSchema(highest_price_hour);
-    newHour.save()
-      .then(doc => console.log('Document saved:', doc))
-      .catch(err => console.error('Error saving document:', err));
-    res.json(highest_price_hour);
+  const highest_price = getHighestPriceAllTime(data);
+  if (highest_price) {
+    writeDayToDatabase(highest_price);
+    res.json(highest_price);
   } else {
     res.status(404).json({ error: 'Error processing request' });
   }
@@ -149,10 +161,7 @@ app.get('/date', async (req, res) => {
   const matchedDate = await getSpecificDate(data, targetDate);
 
   if (matchedDate) {
-    let newDayObject = new daySchema(matchedDate);
-    newDayObject.save()
-      .then(doc => console.log('Document saved:', doc))
-      .catch(err => console.error('Error saving document:', err));
+    writeDayToDatabase(matchedDate);
     res.json(matchedDate);
   } else {
     res.status(404).json({ error: 'No item found for the specified date' });
@@ -175,13 +184,13 @@ app.get('/date/price/lowest', async (req, res) => {
 
   const matchedDate = await getSpecificDate(data, targetDate);
   const lowest_price_hour = getLowestPriceforADay(matchedDate);
+  // initial version overwrites the day in the database with the lowest/highest price.
+  const updatedDay = matchedDate;
+  updatedDay.hourlyData = lowest_price_hour;
 
-  if (matchedDate) {
-    let newDayObject = new hourSchema(lowest_price_hour);
-    newDayObject.save()
-      .then(doc => console.log('Document saved:', doc))
-      .catch(err => console.error('Error saving document:', err));
-    res.json(lowest_price_hour);
+  if (updatedDay) {
+    writeDayToDatabase(updatedDay);
+    res.json(updatedDay);
   } else {
     res.status(404).json({ error: 'No item found for the specified date' });
   }
@@ -203,13 +212,12 @@ app.get('/date/price/highest', async (req, res) => {
 
   const matchedDate = await getSpecificDate(data, targetDate);
   const highest_price_hour = getHighestPriceforADay(matchedDate);
+  const updatedDay = matchedDate;
+  updatedDay.hourlyData = highest_price_hour;
 
-  if (matchedDate) {
-    let newDayObject = new hourSchema(highest_price_hour);
-    newDayObject.save()
-      .then(doc => console.log('Document saved:', doc))
-      .catch(err => console.error('Error saving document:', err));
-    res.json(highest_price_hour);
+  if (updatedDay) {
+    writeDayToDatabase(updatedDay);
+    res.json(updatedDay);
   } else {
     res.status(404).json({ error: 'No item found for the specified date' });
   }
