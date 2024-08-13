@@ -34,7 +34,7 @@ async function fetchPrices() {
 }
 
 // Function to find the matched item based on the target date
-function findItemByDate(data, targetDate) {
+function getSpecificDate(data, targetDate) {
   if (!data || !Array.isArray(data)) {
     console.error('Invalid data');
     return null;
@@ -43,6 +43,8 @@ function findItemByDate(data, targetDate) {
   return data.find(item => item.date === targetDate);
 }
 
+
+//Functions for finding lowest and highest price hour for a given day
 function getLowestPriceforADay(day) {
   let lowest_priceHour = day.hourlyData[0];
   let hours = day.hourlyData;
@@ -53,6 +55,18 @@ function getLowestPriceforADay(day) {
   return lowest_priceHour;
 }
 
+function getHighestPriceforADay(day) {
+  let highest_price_hour = day.hourlyData[0];
+  let hours = day.hourlyData;
+  hours.forEach(hour => {
+    if(hour.data.eur > highest_price_hour.data.eur)
+      highest_price_hour = hour;
+  })
+  return highest_price_hour;
+}
+//
+
+//functions for finding the lowest and highest price hour in all given days
 function getLowestPriceAllTime(data) {
   if (!data || !Array.isArray(data)) {
     console.error('Invalid data');
@@ -65,6 +79,20 @@ function getLowestPriceAllTime(data) {
       lowest_price_hour_all_time = current_day_lowest_price; 
   })
   return lowest_price_hour_all_time;
+}
+
+function getHighestPriceAllTime(data) {
+  if (!data || !Array.isArray(data)) {
+    console.error('Invalid data');
+    return null;
+  }
+  let highest_price_hour_all_time = data[0].hourlyData[0];
+  data.forEach(day => {
+    let current_day_highest_price = getHighestPriceforADay(day)
+    if( current_day_highest_price.data.eur > highest_price_hour_all_time.data.eur)
+      highest_price_hour_all_time = current_day_highest_price; 
+  })
+  return highest_price_hour_all_time;
 }
 
 app.get('/price/lowest', async (req, res) => {
@@ -84,6 +112,22 @@ app.get('/price/lowest', async (req, res) => {
   }
 })
 
+app.get('/price/highest', async (req, res) => {
+  const data = await fetchPrices();
+  if (!data) {
+    return res.status(500).json({ error: 'Failed to fetch data' });
+  }
+  const highest_price_hour = getHighestPriceAllTime(data);
+  if (highest_price_hour) {
+    let newHour = new hourSchema(highest_price_hour);
+    newHour.save()
+      .then(doc => console.log('Document saved:', doc))
+      .catch(err => console.error('Error saving document:', err));
+    res.json(highest_price_hour);
+  } else {
+    res.status(404).json({ error: 'Error processing request' });
+  }
+})
 
 // Get a specific date
 app.get('/date', async (req, res) => {
@@ -101,7 +145,7 @@ app.get('/date', async (req, res) => {
   }
 
   // Find the item with the target date
-  const matchedDate = await findItemByDate(data, targetDate);
+  const matchedDate = await getSpecificDate(data, targetDate);
 
   if (matchedDate) {
     let newDayObject = new daySchema(matchedDate);
@@ -114,7 +158,7 @@ app.get('/date', async (req, res) => {
   }
 });
 
-app.get('/date/lowest_price', async (req, res) => {
+app.get('/date/price/lowest', async (req, res) => {
   const targetDate = req.query.date; // Get the date from query parameters
 
   if (!targetDate) {
@@ -128,26 +172,43 @@ app.get('/date/lowest_price', async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch data' });
   }
 
-  // Find the item with the target date
-  const matchedDay = await findItemByDate(data, targetDate);
-  let hour = matchedDay.hourlyData;
-  let min_price_hour = matchedDay.hourlyData[0];
-  let max_price_hour = min_price_hour;
-  hour.forEach(hour => {
-      if (hour.data.eur < min_price_hour.data.eur)
-        min_price_hour = hour;
-      if (hour.data.eur > max_price_hour.data.eur)
-        max_price_hour = hour;
-  })
-  let high_and_low_price = { ...min_price_hour, ...max_price_hour };
-  console.log(high_and_low_price);
+  const matchedDate = await getSpecificDate(data, targetDate);
+  const lowest_price_hour = getLowestPriceforADay(matchedDate);
 
-  if (matchedDay) {
-    let newDayObject = new hourSchema(high_and_low_price);
+  if (matchedDate) {
+    let newDayObject = new hourSchema(lowest_price_hour);
     newDayObject.save()
       .then(doc => console.log('Document saved:', doc))
       .catch(err => console.error('Error saving document:', err));
-    res.json(high_and_low_price);
+    res.json(lowest_price_hour);
+  } else {
+    res.status(404).json({ error: 'No item found for the specified date' });
+  }
+});
+
+app.get('/date/price/highest', async (req, res) => {
+  const targetDate = req.query.date; // Get the date from query parameters
+
+  if (!targetDate) {
+    return res.status(400).json({ error: 'Date query parameter is required' });
+  }
+
+  // Fetch the data from the external API
+  const data = await fetchPrices();
+
+  if (!data) {
+    return res.status(500).json({ error: 'Failed to fetch data' });
+  }
+
+  const matchedDate = await getSpecificDate(data, targetDate);
+  const highest_price_hour = getHighestPriceforADay(matchedDate);
+
+  if (matchedDate) {
+    let newDayObject = new hourSchema(highest_price_hour);
+    newDayObject.save()
+      .then(doc => console.log('Document saved:', doc))
+      .catch(err => console.error('Error saving document:', err));
+    res.json(highest_price_hour);
   } else {
     res.status(404).json({ error: 'No item found for the specified date' });
   }
