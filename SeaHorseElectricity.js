@@ -1,17 +1,18 @@
 import express from 'express';
+import dotenv from 'dotenv';
 import fetch from 'node-fetch';
 import daySchema from './model/daySchema.js';
-import hourSchema from './model/hourSchema.js';
 import mongoose from 'mongoose';
 
+dotenv.config();
 const app = express();
-const PORT = process.env.PORT || 3000;
+const port = process.env.PORT || 3000;
 
 // Endpoint URL from where data will be fetched
 const endpointUrl = 'https://seahorse-app-ehbvv.ondigitalocean.app/prices';
 
 // Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/seaHorseDB', {
+mongoose.connect('mongodb://host.docker.internal:27017/seaHorseDB', {
   useNewUrlParser: true
 });
 
@@ -29,7 +30,6 @@ async function fetchPrices() {
 
   } catch (error) {
     console.error('Error fetching the prices:', error);
-    return null; // Return null in case of error
   }
 }
 
@@ -196,6 +196,7 @@ app.get('/date/price/lowest', async (req, res) => {
   }
 });
 
+app.get('/test', async (req, res) => { return res.status(200).json({ error: 'Failed to fetch data' });})
 app.get('/date/price/highest', async (req, res) => {
   const targetDate = req.query.date; // Get the date from query parameters
 
@@ -224,6 +225,6 @@ app.get('/date/price/highest', async (req, res) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
 });
